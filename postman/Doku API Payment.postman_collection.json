@@ -1,0 +1,75 @@
+{
+	"info": {
+		"_postman_id": "c566744f-0ed7-4fe7-abcc-5a9cc6a5c375",
+		"name": "Doku API Payment",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26402090",
+		"_collection_link": "https://bold-escape-486797.postman.co/workspace/Test-JavaScript~fa820ba8-c160-4604-813f-a3b1a8981ecf/collection/26402090-c566744f-0ed7-4fe7-abcc-5a9cc6a5c375?action=share&source=collection_link&creator=26402090"
+	},
+	"item": [
+		{
+			"name": "Get Payment Url",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"orderId\": \"-NyfijFzcRs4brKfa_Dr\",\r\n  \"customerId\": \"NQw4iLpIbzcfFrSjPMGTuucBfdG2\"\r\n}\r\n\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/getPaymentLink",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"getPaymentLink"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Check the status payment",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"invoiceNumber\": \"-Nyfit0iyTI1TcecnsAs\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/checkPaymentStatus",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"checkPaymentStatus"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
