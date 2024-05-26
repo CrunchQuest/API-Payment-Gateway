@@ -42,10 +42,8 @@ Untuk menggunakan proyek ini, ikuti langkah-langkah berikut:
    Masukkan ini ke body raw Postman
 
    ```bash
-   {
   "orderId": "isi Service Request ID",
   "customerId": "Isi Users ID"
-   }
    ```
 
    Run this link on the postman

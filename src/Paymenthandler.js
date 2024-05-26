@@ -1,15 +1,9 @@
-const express = require('express');
-const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
-const axios = require('axios');
+// paymentHandler.js
+const crypto = require("crypto");
+const { v4: uuidv4 } = require("uuid");
+const axios = require("axios");
 const admin = require('firebase-admin');
 const db = require('../Firebase'); // Ensure this is the correct path to your Firebase configuration
-
-const app = express();
-const port = 3000;
-
-// Middleware to parse JSON
-app.use(express.json());
 
 const client_id = 'BRN-0208-1716179958112'; // Change with your client-id
 const secret_key = 'SK-sLHIfTLsCKCmbSs5Dafo'; // Change with your secret-key
@@ -35,12 +29,41 @@ function generateSignature(clientId, requestId, requestTarget, digest, secret) {
   return `HMACSHA256=${signature}`;
 }
 
-// Define the API endpoint
-app.post('/api/getPaymentLink', async (req, res) => {
-  const { orderId, customerId } = req.body; // Assume order ID and customer ID are passed in the request body
+// Define function to fetch payment status
+const cek_payment = async (invoiceNumber) => {
+  const request_id = uuidv4();
+  const url = `/orders/v1/status/${invoiceNumber}`;
+  const requestTimestamp = getCurrentTimestamp();
+  
+  // Generate Header Signature
+  const headerSignature = generateSignature(client_id, request_id, url, '', secret_key);
+
+  const config = {
+    method: 'get',
+    maxBodyLength: Infinity,
+    url: `https://api-sandbox.doku.com${url}`,
+    headers: {
+      'Client-Id': client_id,
+      'Request-Id': request_id,
+      'Request-Timestamp': requestTimestamp,
+      'Signature': headerSignature,
+    },
+  };
+
+  try {
+    const response = await axios.request(config);
+    return response.data;
+  } catch (error) {
+    console.error('Error occurred:', error.response ? error.response.data : error.message);
+    throw new Error('An error occurred while fetching payment status');
+  }
+};
+// Define function to get payment link
+const getPaymentLink = async (reqBody) => {
+  const { orderId, customerId } = reqBody; // Assume order ID and customer ID are passed in the request body
 
   if (!orderId || !customerId) {
-    return res.status(400).json({ error: 'orderId and customerId are required' });
+    throw new Error('orderId and customerId are required');
   }
 
   try {
@@ -49,8 +72,7 @@ app.post('/api/getPaymentLink', async (req, res) => {
     const orderData = orderSnapshot.val();
 
     if (!orderData) {
-      console.error('Order not found:', orderId);
-      return res.status(404).json({ error: 'Order not found' });
+      throw new Error(`Order not found: ${orderId}`);
     }
 
     // Fetch customer data from Firebase
@@ -58,8 +80,7 @@ app.post('/api/getPaymentLink', async (req, res) => {
     const customerData = customerSnapshot.val();
 
     if (!customerData) {
-      console.error('Customer not found:', customerId);
-      return res.status(404).json({ error: 'Customer not found' });
+      throw new Error(`Customer not found: ${customerId}`);
     }
 
     console.log('Order Data:', orderData);
@@ -68,8 +89,7 @@ app.post('/api/getPaymentLink', async (req, res) => {
     // Ensure Firstname and Lastname fields exist
     const customerName = `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim();
     if (!customerName) {
-      console.error('Customer name is invalid:', customerName);
-      return res.status(400).json({ error: 'Customer name is invalid' });
+      throw new Error('Customer name is invalid');
     }
 
     const request_id = uuidv4();
@@ -141,14 +161,11 @@ app.post('/api/getPaymentLink', async (req, res) => {
 
     const response = await axios.request(config);
     console.log('Response from Doku:', response.data);
-    res.json(response.data);
+    return response.data;
   } catch (error) {
     console.error('Error occurred:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'An error occurred', details: error.response ? error.response.data : error.message });
+    throw new Error('An error occurred while getting payment link');
   }
-});
+};
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+module.exports = { cek_payment, getPaymentLink };
