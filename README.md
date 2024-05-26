@@ -26,21 +26,24 @@ Jalankan perintah berikut untuk menginstal semua dependensi yang diperlukan:
 npm install
 ```
 
-4. **Generate Payment Url**
-   Silahkan ganti client_id, secret_key dan jsonBody (terkait detail order)
+### 4. Generate Payment Url
 
-5. **Cek Payment**
-   Silahkan ganti client_id, secret_key dan invoice_number
+Silakan ganti `client_id`, `secret_key`, dan `jsonBody` (terkait detail order).
 
-6. **Using Api**
-   Masukkan ini ke body raw Postman
+### 5. Cek Pembayaran
 
-   ```bash
-   {
+Silakan ganti `client_id`, `secret_key`, dan `invoice_number`.
+
+### 6. Menggunakan API
+
+Masukkan ini ke dalam body raw Postman:
+
+```json
+{
   "orderId": "isi Service Request ID",
   "customerId": "Isi Users ID"
-   }
-   ```
+}
+```
 
 ### 7. Jalankan API
 
@@ -60,3 +63,5 @@ http://localhost:3000/api/getPaymentLink
 
 Proyek ini dilisensikan di bawah Lisensi MIT.
 &copy; Hak Cipta CrunchQuest 2024
+
+
