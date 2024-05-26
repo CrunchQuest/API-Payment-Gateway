@@ -1,4 +1,3 @@
-```markdown
 # Doku Payment NodeJS
 
 Contoh penggunaan API Doku untuk menghasilkan URL pembayaran dan memeriksa pembayaran berdasarkan nomor invoice dengan menggunakan teknologi NodeJS.
@@ -64,4 +63,3 @@ http://localhost:3000/api/getPaymentLink
 
 Proyek ini dilisensikan di bawah Lisensi MIT.
 &copy; Hak Cipta CrunchQuest 2024
-```
