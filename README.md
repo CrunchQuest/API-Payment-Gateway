@@ -38,6 +38,21 @@ Untuk menggunakan proyek ini, ikuti langkah-langkah berikut:
 5. **Cek Payment**
    Silahkan ganti client_id, secret_key dan invoice_number
 
+6. **Using Api**
+   Masukkan ini ke body raw Postman
+
+   ```bash
+   {
+  "orderId": "isi Service Request ID",
+  "customerId": "Isi Users ID"
+   }
+   ```
+
+   Run this link on the postman
+
+   ```bash
+   http://localhost:3000/api/getPaymentLink
+   ```
 
 ## Lisensi
 
