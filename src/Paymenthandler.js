@@ -1,4 +1,3 @@
-// paymentHandler.js
 const crypto = require("crypto");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
@@ -126,7 +125,7 @@ const getPaymentLink = async (req, res) => {
     console.log("Doku API Response:", response.data);
 
     // Accessing the payment URL from the response
-    const paymentUrl = response.data.response.payment.url;
+    const paymentUrl = response.data.response?.payment?.url;
 
     if (!paymentUrl) {
       console.error('Payment URL is undefined in Doku API response');
@@ -139,7 +138,7 @@ const getPaymentLink = async (req, res) => {
     res.status(200).send({ paymentUrl });
   } catch (error) {
     console.error('Error generating payment URL:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send({ error: error.message });
   }
 };
 
