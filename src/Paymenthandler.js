@@ -58,82 +58,43 @@ const cek_payment = async (invoiceNumber) => {
     throw new Error('An error occurred while fetching payment status');
   }
 };
-// Define function to get payment link
-const getPaymentLink = async (reqBody) => {
-  const { orderId, customerId } = reqBody; // Assume order ID and customer ID are passed in the request body
 
-  if (!orderId || !customerId) {
-    throw new Error('orderId and customerId are required');
-  }
-
+const getPaymentLink = async (req, res) => {
   try {
-    // Fetch order data from Firebase
-    const orderSnapshot = await db.ref(`service_requests/${orderId}`).once('value');
-    const orderData = orderSnapshot.val();
+    const { serviceRequest, user } = req.body;
 
-    if (!orderData) {
-      throw new Error(`Order not found: ${orderId}`);
-    }
-
-    // Fetch customer data from Firebase
-    const customerSnapshot = await db.ref(`users/${customerId}`).once('value');
-    const customerData = customerSnapshot.val();
-
-    if (!customerData) {
-      throw new Error(`Customer not found: ${customerId}`);
-    }
-
-    console.log('Order Data:', orderData);
-    console.log('Customer Data:', customerData);
-
-    // Ensure Firstname and Lastname fields exist
-    const customerName = `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim();
-    if (!customerName) {
-      throw new Error('Customer name is invalid');
+    if (!serviceRequest || !user) {
+      return res.status(400).send('serviceRequest and user are required');
     }
 
     const request_id = uuidv4();
-    const url = '/checkout/v1/payment';
+    const url = "/checkout/v1/payment";
     const requestTimestamp = getCurrentTimestamp();
 
-    // Create jsonBody from fetched data
+    // Prepare the jsonBody
     const jsonBody = {
       order: {
-        amount: orderData.price,
+        amount: serviceRequest.price,
+        invoice_number: request_id,
         currency: "IDR",
-        callback_url: orderData.callback_url,
-        callback_url_cancel: orderData.callback_url_cancel,
-        invoice_number: orderData.invoice_number || orderId, 
-        auto_redirect: true
-      },
-      payment: {
-        payment_due_date: 60,
-        payment_method_types: [
-          "VIRTUAL_ACCOUNT_BCA",
-          "VIRTUAL_ACCOUNT_BANK_MANDIRI",
-          "VIRTUAL_ACCOUNT_BANK_SYARIAH_MANDIRI",
-          "VIRTUAL_ACCOUNT_DOKU",
-          "VIRTUAL_ACCOUNT_BRI",
-          "VIRTUAL_ACCOUNT_BNI",
-          "VIRTUAL_ACCOUNT_BANK_PERMATA",
-          "VIRTUAL_ACCOUNT_BANK_CIMB",
-          "VIRTUAL_ACCOUNT_BANK_DANAMON",
-          "ONLINE_TO_OFFLINE_ALFA",
-          "CREDIT_CARD",
-          "DIRECT_DEBIT_BRI",
-          "EMONEY_SHOPEEPAY",
-          "EMONEY_OVO",
-          "EMONEY_DANA",
-          "QRIS",
-          "PEER_TO_PEER_AKULAKU",
-          "PEER_TO_PEER_KREDIVO",
-          "PEER_TO_PEER_INDODANA"
+        callback_url: "https://doku.com/",
+        line_items: [
+          {
+            name: serviceRequest.title,
+            price: serviceRequest.price,
+            quantity: 1
+          }
         ]
       },
+      payment: {
+        payment_due_date: 5
+      },
       customer: {
-        id: customerData.id,
-        name: customerName,
-        email: customerData.emailAddress,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.emailAddress || "no-email@example.com", // Handle empty email
+        phone: user.mobileNumber,
+        address: serviceRequest.address,
+        country: "ID"
       }
     };
 
@@ -143,28 +104,42 @@ const getPaymentLink = async (reqBody) => {
     // Generate Header Signature
     const headerSignature = generateSignature(client_id, request_id, url, digest, secret_key);
 
+    // Axios configuration
     const config = {
-      method: 'post',
+      method: "post",
       maxBodyLength: Infinity,
-      url: `https://api-sandbox.doku.com${url}`,
+      url: "https://api-sandbox.doku.com" + url,
       headers: {
-        'Client-Id': client_id,
-        'Request-Id': request_id,
-        'Request-Timestamp': requestTimestamp,
-        'Signature': headerSignature,
-        'Content-Type': 'application/json'
+        "Client-Id": client_id,
+        "Request-Id": request_id,
+        "Request-Timestamp": requestTimestamp,
+        "Signature": headerSignature,
+        "Content-Type": "application/json",
       },
-      data: jsonBodyString
+      data: jsonBodyString,
     };
 
-    console.log('Request config:', config);
-
+    // Send the payment data to the Doku API
     const response = await axios.request(config);
-    console.log('Response from Doku:', response.data);
-    return response.data;
+
+    // Log the entire response from Doku API
+    console.log("Doku API Response:", response.data);
+
+    // Accessing the payment URL from the response
+    const paymentUrl = response.data.response.payment.url;
+
+    if (!paymentUrl) {
+      console.error('Payment URL is undefined in Doku API response');
+      throw new Error('Payment URL is undefined');
+    }
+
+    // Log the payment URL
+    console.log('Payment URL:', paymentUrl);
+
+    res.status(200).send({ paymentUrl });
   } catch (error) {
-    console.error('Error occurred:', error.response ? error.response.data : error.message);
-    throw new Error('An error occurred while getting payment link');
+    console.error('Error generating payment URL:', error);
+    res.status(500).send('Internal Server Error');
   }
 };
 
