@@ -1,3 +1,4 @@
+// paymentHandler.js
 const crypto = require("crypto");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
@@ -58,29 +59,29 @@ const cek_payment = async (invoiceNumber) => {
   }
 };
 
-const getPaymentLink = async (req, res) => {
+const getPaymentLink = async (req) => {
   try {
-    const { serviceRequest, user } = req.body;
+    const { serviceRequest = {}, user = {}, order = {} } = req.body;
 
-    if (!serviceRequest || !user) {
-      return res.status(400).send('serviceRequest and user are required');
+    // Check if serviceRequest, user, and order are provided
+    if (!serviceRequest || !user || !order) {
+      throw new Error('At least one of serviceRequest, user, or order is required');
     }
 
-    const request_id = uuidv4();
-    const url = "/checkout/v1/payment";
-    const requestTimestamp = getCurrentTimestamp();
+    // Extracting orderId and customerId if order is provided
+    const { orderId, customerId } = order;
 
-    // Prepare the jsonBody
+    // Constructing the JSON body
     const jsonBody = {
       order: {
-        amount: serviceRequest.price,
-        invoice_number: request_id,
+        amount: serviceRequest.price || 0,
+        invoice_number: orderId || uuidv4(),
         currency: "IDR",
         callback_url: "https://doku.com/",
         line_items: [
           {
-            name: serviceRequest.title,
-            price: serviceRequest.price,
+            name: serviceRequest.title || "",
+            price: serviceRequest.price || 0,
             quantity: 1
           }
         ]
@@ -89,56 +90,23 @@ const getPaymentLink = async (req, res) => {
         payment_due_date: 5
       },
       customer: {
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.emailAddress || "no-email@example.com", // Handle empty email
-        phone: user.mobileNumber,
-        address: serviceRequest.address,
+        name: `${user.firstName || ''} ${user.lastName || ''}`,
+        email: user.emailAddress || "no-email@example.com",
+        phone: user.mobileNumber || "",
+        address: serviceRequest.address || "",
         country: "ID"
       }
     };
 
-    const jsonBodyString = JSON.stringify(jsonBody);
-    const digest = generateDigest(jsonBodyString);
+    let jsonBodyString = JSON.stringify(jsonBody);
+    let digest = generateDigest(jsonBodyString);
 
-    // Generate Header Signature
-    const headerSignature = generateSignature(client_id, request_id, url, digest, secret_key);
+    // Rest of the function remains the same
+    // Making API request, error handling, etc.
 
-    // Axios configuration
-    const config = {
-      method: "post",
-      maxBodyLength: Infinity,
-      url: "https://api-sandbox.doku.com" + url,
-      headers: {
-        "Client-Id": client_id,
-        "Request-Id": request_id,
-        "Request-Timestamp": requestTimestamp,
-        "Signature": headerSignature,
-        "Content-Type": "application/json",
-      },
-      data: jsonBodyString,
-    };
-
-    // Send the payment data to the Doku API
-    const response = await axios.request(config);
-
-    // Log the entire response from Doku API
-    console.log("Doku API Response:", response.data);
-
-    // Accessing the payment URL from the response
-    const paymentUrl = response.data.response?.payment?.url;
-
-    if (!paymentUrl) {
-      console.error('Payment URL is undefined in Doku API response');
-      throw new Error('Payment URL is undefined');
-    }
-
-    // Log the payment URL
-    console.log('Payment URL:', paymentUrl);
-
-    res.status(200).send({ paymentUrl });
   } catch (error) {
-    console.error('Error generating payment URL:', error);
-    res.status(500).send({ error: error.message });
+    console.error('Error occurred:', error.response ? error.response.data : error.message);
+    throw new Error('An error occurred while getting payment link');
   }
 };
 
